@@ -1,2 +1,2 @@
 # Django-Advanced
-Django Advanced - October 2024
+Course at SofUni - October 2024
