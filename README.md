@@ -1,6 +1,9 @@
 # Django-Advanced
 Course at SofUni - October 2024
 
+![brecht-corbeel-qHx3w6Gwz9k-unsplash](https://github.com/user-attachments/assets/e58e987a-7536-42dc-9769-a86e61fc783c)
+
+
 ## Authentication and Autorization
 
 
