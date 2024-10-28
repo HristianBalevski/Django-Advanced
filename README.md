@@ -108,7 +108,7 @@ Django автоматично добавя CSRF защита при формит
   <button type="submit">Login</button>
 </form>
 ```
-**ВИДОВЕ АТАКИ**
+**ВИДОВЕ АТАКИ:**
 
 **SQL инжекция (SQL Injection)**
 
