@@ -1,5 +1,6 @@
 # Django-Advanced
-Course at SofUni - October 2024
+
+An advanced exploration of Django concepts and best practices, developed as part of my course at [SoftUni](https://softuni.bg/). This repository includes sophisticated examples, tools, and patterns for building more robust, scalable, and secure Django applications.
 
 [Click here for more information about the course](https://softuni.bg/trainings/4714/django-advanced-october-2024)
 
