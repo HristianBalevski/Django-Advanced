@@ -1,0 +1,38 @@
+# macOS specific files
+.DS_Store
+.swp
+.viminfo
+
+# User configurations and hidden folders
+.bash_history
+.cache/
+.config/
+.docker/
+.gitconfig
+.gitkraken/
+.idlerc/
+.iterm2/
+.lesshst
+.node_repl_history
+.npm/
+.oh-my-zsh/
+.p10k.zsh
+.psql_history
+.ssh/
+.sqlite_history
+.zcompdump*
+.zsh_sessions/
+.zsh_history
+.zshrc
+.zshrc.save
+.vscode/
+
+# macOS applications and directories
+Applications/
+Library/
+Movies/
+Music/
+Pictures/
+Projects/
+Public/
+
