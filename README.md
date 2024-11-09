@@ -287,3 +287,217 @@ user = authenticate(username='peter', password='password123')
   ```
 
   ---
+
+## 03.Extending the User Model
+
+В Django, User моделът е основен компонент, който се използва за управление на потребителски данни. В някои случаи обаче може да се наложи добавяне на нови функционалности или специфична логика. Django позволява разширяване на User модела по няколко начина, като всяка техника има своите предимства и недостатъци.
+
+```AUTH_USER_MODEL = 'path.to.my.model'```
+
+**01.User Model Inheritance Chain**
+
+Django предоставя няколко класа, които служат като основа за изграждане на User модели:
+
+- **User**: Базовият клас, който не добавя нови полета или методи.
+
+- **AbstractUser**: Добавя полета като ```username```, ```first_name```, ```last_name```, и ```email```.
+
+- **AbstractBaseUser**: Съдържа два метода ```password``` и ```last_login```.
+
+- **PermissionsMixin**: Удобен миксин за управление на права и роли на потребителите.
+
+Наследяваме **AbstractUser**, защото, когато наследим неабстрактен модел, получаваме **One to One relationship**, докато, ако е абстрактен, получаваме директно полетата в една таблица.
+
+<img width="1267" alt="Screenshot 2024-11-09 at 22 18 24" src="https://github.com/user-attachments/assets/d76efa8b-f3d2-4c9d-8047-c6e79958f108">
+
+**02.Extending the User Model**
+
+Django предлага няколко подхода за разширяване на User модела, като изборът на метод зависи от нуждите на приложението:
+
+**2.1.Proxy модел**
+
+**Proxy моделът** е подход за промяна на поведението на съществуващ модел без да се променя базата данни. Използва се, ако искаме да добавим методи или промяна на сортирането, но без да създаваме нови полета.
+
+```
+from django.contrib.auth.models import User
+
+class AppUserProxy(User):
+    class Meta:
+        proxy = True
+        ordering = ('first_name', )
+
+    def some_custom_behavior(self):
+        # Добавяме поведение специфично за AppUserProxy
+        pass
+```
+**2.2.One-to-One релация**
+
+Тази техника позволява създаване на допълнителна таблица в базата данни, където можем да съхраняваме информация, специфична за потребителя, без да променяме съществуващата ```auth_user``` таблица.
+
+```
+from django.contrib.auth import get_user_model
+from django.db import models
+
+UserModel = get_user_model()
+
+class Profile(models.Model):
+    user = models.OneToOneField(UserModel, on_delete=models.CASCADE, primary_key=True)
+    date_of_birth = models.DateField(null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+```
+Така всяка ```Profile``` инстанция се свързва директно с User модела чрез One-to-One релация.
+
+**2.3. Наследяване на AbstractUser**
+
+С този подход можем директно да добавим нови полета към User модела, без да създаваме нова таблица. Трябва обаче да променим настройката ```AUTH_USER_MODEL``` в ```settings.py```.
+
+```
+from django.contrib.auth import models as auth_models
+
+class CustomUser(auth_models.AbstractUser):
+    date_of_birth = models.DateField(null=True, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    # Други допълнителни полета
+```
+**2.4. Наследяване на AbstractBaseUser**
+
+Най-напредналата техника, която позволява пълна свобода при дефиниране на User модела, включително и уникални изисквания за аутентификация.
+
+```
+from django.contrib.auth import models as auth_models
+from django.db import models
+
+class AppUser(auth_models.AbstractBaseUser, auth_models.PermissionsMixin):
+    email = models.EmailField(unique=True)
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    def __str__(self):
+        return self.email
+```
+**03. Управление на потребителите чрез BaseUserManager**
+
+При наследяване от ```AbstractBaseUser```, е препоръчително да създадем ```BaseUserManager```, който да управлява създаването на потребители и суперпотребители.
+
+```
+from django.contrib.auth.models import BaseUserManager
+
+class AppUserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        return self.create_user(email, password, **extra_fields)
+```
+
+**04. Django Signals**
+
+Сигналите са начин за реагиране на събития в приложението, без да се променя основният код. Например, при създаване на нов потребител, можем автоматично да създадем свързан профил чрез сигнал.
+
+```
+from django.contrib.auth import get_user_model
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+UserModel = get_user_model()
+
+@receiver(post_save, sender=UserModel)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+```
+
+**05. AppUser Forms**
+
+Формите за създаване и редактиране на потребители в Django са важна част от работата с потребителски данни. При създаването на персонализиран User модел, трябва да създадем и персонализирани форми, за да можем да управляваме потребителите през Django Admin интерфейса.
+
+**Пример за AppUserCreationForm и AppUserChangeForm**
+В този случай създаваме форми за създаване на нови потребители ```AppUserCreationForm``` и за промяна на съществуващи потребители ```AppUserChangeForm```.
+
+```
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
+from django.contrib.auth import get_user_model
+
+UserModel = get_user_model()
+
+class AppUserCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = UserModel
+        fields = ('email',)  # Изброяваме полетата, които искаме да покажем
+
+class AppUserChangeForm(UserChangeForm):
+    class Meta(UserChangeForm.Meta):
+        model = UserModel
+        fields = '__all__'  # Покажете всички полета за редактиране на потребителите
+```
+- **AppUserCreationForm**: Използва се при създаването на нови потребители и задава кои полета да се показват в admin интерфейса.
+
+- **AppUserChangeForm**: Използва се за промяна на съществуващи потребители и определя кои полета могат да се редактират.
+
+**06. Регистриране на AppUser в Admin сайта**
+
+След като сме създали новия потребителски модел и формите, трябва да регистрираме ```AppUser``` модела в ```Django Admin```, за да може да се управлява през администраторския панел. Това включва настройка на изгледа и полетата, които ще се показват.
+
+**Пример за регистрация на AppUser в Django Admin**
+
+```
+from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth import get_user_model
+from .forms import AppUserCreationForm, AppUserChangeForm
+
+UserModel = get_user_model()
+
+@admin.register(UserModel)
+class AppUserAdmin(UserAdmin):
+    model = UserModel
+    add_form = AppUserCreationForm
+    form = AppUserChangeForm
+    list_display = ('pk', 'email', 'is_staff', 'is_superuser')
+    search_fields = ('email',)
+    ordering = ('pk',)
+
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {'fields': ()}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login',)}),
+    )
+
+    add_fieldsets = (
+        (
+            None,
+            {
+                "classes": ("wide",),
+                "fields": ("email", "password1", "password2"),
+            },
+        ),
+    )
+```
+- **add_form** и **form**: Задават формите за добавяне и редактиране на потребители.
+
+- **list_display**: Определя кои полета ще се виждат в admin панела.
+
+- **search_fields**: Позволява търсене по полета, като например ```email```.
+
+- **fieldsets**: Групира полетата, които ще се показват при редактиране на потребител.
+
+- **add_fieldsets**: Задава полетата, които ще се показват при създаването на нов потребител.
+
+Тази конфигурация позволява на администратора да добавя нови потребители, да редактира съществуващи и да вижда допълнителната информация и права на всеки потребител.
+
+---
