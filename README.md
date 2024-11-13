@@ -501,3 +501,84 @@ class AppUserAdmin(UserAdmin):
 Тази конфигурация позволява на администратора да добавя нови потребители, да редактира съществуващи и да вижда допълнителната информация и права на всеки потребител.
 
 ---
+
+## 04.Django Middlewares and Sessions
+
+**1.What is Middleware**
+
+Middleware е начин в Django да обработваме ```заявки (requests)``` и ```отговори (responses)```, преди те да достигнат до view функциите или след като те са изпълнени. Това е подход, който помага на Django да изпълнява различни функции за сигурност, управление на сесии и други. Всеки middleware е като "филтър", който добавя определена функционалност към приложението.
+
+Видове Django Middleware:
+
+- **SecurityMiddleware**: Подобрява сигурността, като гарантира, че сайтът работи само през защитена връзка (HTTPS) и добавя настройки, които предпазват от хакерски атаки.
+
+- **SessionMiddleware**: Управлява сесиите на потребителите.
+
+- **CommonMiddleware**: Управлява кеширане и някои други общи настройки.
+
+- **CsrfViewMiddleware**: Осигурява защита срещу CSRF атаки.
+
+- **AuthenticationMiddleware**: Позволява проверка на автентикация.
+
+Пример за middleware:
+
+```
+# Пример за custom middleware
+class MyMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Код преди view функцията
+        print("Това е преди view функцията.")
+
+        response = self.get_response(request)
+
+        # Код след изпълнението на view функцията
+        print("Това е след изпълнението на view функцията.")
+        return response
+```
+Този код добавя текст преди и след изпълнението на всяка заявка, което може да е полезно за логване или обработка на данни.
+
+**2. Django Sessions**
+
+Сесиите са начин за запазване на информация за всеки потребител поотделно. Когато потребител се свърже с приложението, може да се създаде сесия, която да запази информация като идентификация на потребителя, предпочитания и други.
+
+Пример за използване на сесии:
+
+```
+from django.shortcuts import render
+
+def index(request):
+    num_visits = request.session.get('num_visits', 0)  # получаване на броя посещения
+    request.session['num_visits'] = num_visits + 1  # увеличаване на броя посещения
+
+    return render(request, 'index.html', {'num_visits': num_visits})
+```
+
+Тук използваме ```request.session``` като речник, за да запазим броя посещения на страницата от потребителя.
+
+**Как се активират сесиите?** В ```settings.py``` трябва да добавим ```'django.contrib.sessions'``` към ```INSTALLED_APPS``` и ```'django.contrib.sessions.middleware.SessionMiddleware'``` към ```MIDDLEWARE```.
+
+**3. Cookies**
+
+Cookies са малки файлове, съхранявани на устройството на потребителя и съдържащи информация за посещението му. В Django се използват основно за съхранение на session ID, за да се идентифицира уникално сесията на потребителя.
+
+```
+Пример за използване на cookie:
+
+```
+def set_cookie_view(request):
+    response = HttpResponse("Cookie set!")
+    response.set_cookie('my_cookie', 'cookie_value', max_age=3600)  # съхранява се за 1 час
+    return response
+
+def get_cookie_view(request):
+    cookie_value = request.COOKIES.get('my_cookie', 'Не е зададена cookie')
+    return HttpResponse(f'Cookie value: {cookie_value}')
+```
+
+Тук ```set_cookie_view``` създава cookie с име ```my_cookie```, а ```get_cookie_view``` чете тази стойност.
+
+---
+
