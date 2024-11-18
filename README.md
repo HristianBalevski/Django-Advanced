@@ -581,3 +581,228 @@ def get_cookie_view(request):
 
 ---
 
+## 05.Django REST Basics
+
+**01. What is API**
+
+**API (Application Programming Interface)** е интерфейс, който позволява на различни софтуерни системи да комуникират помежду си.
+
+**Основни характеристики на API:**
+
+  1. **Посредник**: API действа като посредник между две системи, което означава, че определя как програмите могат да взаимодействат.
+  2.  **Методи и протоколи**: Определя правилата (методи, протоколи) за комуникация.
+  3.  **Улеснява интеграцията**: Позволява на разработчиците да използват съществуващи функционалности, без да разбират сложните вътрешности на системата.
+
+**Пример за реално приложение:**
+
+Приложение за прогноза за времето. Това приложение използва API, за да вземе данни от сървър за времето:
+
+  - **Клиент**: Приложението за времето изпраща заявка (например град, дата).
+  - **Сървър**: API на времето връща информацията (например температура, валежи).
+
+**Видове заявки:**
+
+  - **GET**: Извличане на информация (напр. списък с продукти).
+
+  - **POST**: Създаване на нова информация (напр. добавяне на продукт).
+
+  - **PUT**: Актуализиране на съществуваща информация (напр. редакция на продукт).
+
+  - **DELETE**: Изтриване на съществуваща информация.
+
+Примерна заявка за API (във формат JSON):
+
+```
+{
+    "endpoint": "/products/",
+    "method": "POST",
+    "data": {
+        "name": "Example Product",
+        "price": 19.99
+    }
+}
+```
+API прави разработката по-ефективна, като предоставя стандартизирани начини за взаимодействие между различни системи и компоненти.
+
+**2. RESTful APIs**
+
+**RESTful APIs** са интерфейси, базирани на принципите на **REST (Representational State Transfer)**. Те позволяват взаимодействие между различни софтуерни системи чрез стандартни HTTP методи като ```GET```, ```POST```, ```PUT``` и ```DELETE```.
+
+- **Принципи на REST:**
+
+  - **Client-Server Architecture**: Клиентът изпраща заявки, а сървърът връща отговори.
+ 
+  - **Statelessness**: Всяка заявка съдържа цялата информация, необходима за обработката и.
+ 
+  - **Uniform Interface**: Всички взаимодействия следват стандартни правила (URI, HTTP методи).
+ 
+  - **Resource-Based**: Всеки елемент (като книга, потребител) е ресурс с уникален URI.
+ 
+  - **Representation**: Ресурсите се връщат в JSON, XML или други формати.
+
+Пример: API за книги:
+
+  - ```GET /books/``` – връща списък с книги.
+
+  - ```POST /books/``` – добавя нова книга.
+
+  - ```GET /books/1/``` – връща книга с ID = 1.
+
+**3. Django REST Framework (DRF)**
+
+**DRF** улеснява създаването на RESTful API в Django. Някои предимства:
+
+**3.1. Scalability (Скалируемост)**
+
+RESTful APIs са подходящи за приложения, които трябва да се разрастват с увеличаване на броя на потребителите или данните.
+
+  - **Причина**: Архитектурата на REST, базирана на HTTP протокол, позволява хоризонтално скалиране – лесно добавяне на нови сървъри.
+  - **Пример:**
+    - Големи платформи като Facebook или Amazon използват RESTful APIs, за да управляват милиони заявки от потребители без забавяне.
+    - Ако заявките се увеличат, нови сървъри могат да бъдат добавени за обработка на натоварването.
+   
+**3.2. Simplicity (Простота)**
+
+RESTful APIs са лесни за разбиране, използване и поддръжка.
+
+  - **Причина**: Те използват стандартни HTTP методи ```GET```, ```POST```, ```PUT```, ```DELETE``` и познати формати като JSON или XML.
+  - **Пример:**
+    - Един разработчик може бързо да разбере как да използва REST API, тъй като документацията често е ясна и следва стандартни правила.
+    - За извличане на данни: Просто изпратете ```GET``` заявка до ```/api/products/```.
+
+**3.3. Flexibility (Гъвкавост)**
+
+RESTful APIs поддържат широк набор от клиенти и устройства.
+
+  - **Причина**: Те не са ограничени до конкретна платформа – работят с браузъри, мобилни приложения, IoT устройства и др.
+  - **Пример**:
+    - Един RESTful API за електронен магазин може да бъде достъпен както от уебсайт, така и от мобилно приложение или смарт устройство (напр. гласов асистент).
+   
+**3.4. Interoperability (Съвместимост)**
+
+RESTful APIs позволяват взаимодействие между различни системи, платформи и технологии.
+
+- **Причина**: Те използват стандартни протоколи и формати (например HTTP и JSON), които са универсално поддържани.
+- **Пример**:
+  - API, създадено на Python, може да бъде използвано от приложение на JavaScript или Java, без проблеми с форматирането и комуникацията.
+ 
+**4. Requirements and Installation**
+
+**Изисквания**:
+
+  - Python 3.6+ и Django 3.0+.
+
+**Инсталация**:
+
+```pip install djangorestframework```
+
+Добавете ```rest_framework``` в ```INSTALLED_APPS```:
+
+```
+INSTALLED_APPS = [
+    ...,
+    'rest_framework',
+]
+```
+Добавете URL конфигурация:
+
+```
+from django.urls import path, include
+
+urlpatterns = [
+    path('api/', include('your_app.urls')),
+]
+```
+
+**5. Създаване на RESTful API с DRF**
+
+**A. Създаване на модел**
+
+```
+from django.db import models
+
+class Book(models.Model):
+    title = models.CharField(max_length=100)
+    pages = models.IntegerField()
+    description = models.TextField()
+    author = models.CharField(max_length=50)
+```
+
+**B. Сериализатори**
+
+```
+from rest_framework import serializers
+from .models import Book
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = '__all__'
+```
+
+**C. Създаване на APIView**
+
+```
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from .models import Book
+from .serializers import BookSerializer
+
+class ListBooksView(APIView):
+    def get(self, request):
+        books = Book.objects.all()
+        serializer = BookSerializer(books, many=True)
+        return Response({"books": serializer.data})
+
+    def post(self, request):
+        serializer = BookSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+```
+
+**D. Добавяне на URL**
+
+```
+from django.urls import path
+from .views import ListBooksView
+
+urlpatterns = [
+    path('books/', ListBooksView.as_view(), name="books-all"),
+]
+```
+
+**E. Стартиране на сървъра**
+
+```
+python manage.py runserver
+```
+
+**6. Използване на Postman**
+
+Postman е инструмент за изпращане на HTTP заявки.
+
+  1. **GET заявка**: Изпратете заявка до ```http://127.0.0.1:8000/api/books/```, за да получите списък с книги.
+     
+  2. **POST заявка**:
+   
+     -  Въведете URL: ```http://127.0.0.1:8000/api/books/```.
+     -  Изберете метод: POST.
+     -  Добавете JSON тяло:
+    
+       ```
+       {
+         "title": "Example Book",
+         "pages": 123,
+         "description": "A sample book",
+         "author": "John Doe"
+      }
+      ```
+
+---
+
+
+  
+
