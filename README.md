@@ -803,6 +803,172 @@ Postman е инструмент за изпращане на HTTP заявки.
 
 ---
 
+## 06. Django REST Advanced
 
-  
+**1. Advanced Serialization**
 
+**Nested serializers** в Django REST Framework (DRF) позволяват да сереализираме и десеализираме сложни вложени структури от данни. Те са полезни в ситуации, когато:
+
+- Съществуват взаимоотношения между модели.
+- Необходимо е да включим свързани данни в API отговори или да обработим вложени данни в API заявки.
+
+Пример:
+
+```
+from rest_framework import serializers
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = ['title']
+
+class AuthorSerializer(serializers.ModelSerializer):
+    books = BookSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Author
+        fields = ['name', 'books']
+```
+
+В този пример ```AuthorSerializer``` включва информация за свързаните книги на автора, като използва вложен сериалайзер.
+
+
+Когато имаме модели с взаимоотношения (например Parent и Child), може да използваме вложени сериалайзери, за да обработваме свързани данни при създаване на обект.
+
+Пример:
+
+```
+class AuthorSerializer(serializers.ModelSerializer):
+    books = BookSerializer(many=True)
+
+    class Meta:
+        model = Author
+        fields = ['name', 'books']
+
+    def create(self, validated_data):
+        books_data = validated_data.pop('books', [])
+        author = Author.objects.create(**validated_data)
+        for book_data in books_data:
+            Book.objects.create(author=author, **book_data)
+        return author
+```
+
+**2. Generic Views in DRF**
+
+Generic API Views предоставят готови класове за често използвани операции (CRUD). Те опростяват писането на код за общи случаи.
+
+Примери:
+
+  - ```ListAPIView```: Списък с обекти.
+
+  - ```RetrieveAPIView```: Единичен обект по първичен ключ.
+
+  - ```ListCreateAPIView```: Списък + създаване.
+
+Пример за ```ListCreateAPIView```:
+
+```
+from rest_framework import generics
+
+class AuthorListCreateView(generics.ListCreateAPIView):
+    queryset = Author.objects.all()
+    serializer_class = AuthorSerializer
+```
+
+**3. Authentication and Permissions in DRF**
+
+**Authentication**
+
+**Автентикацията** проверява идентичността на потребителя. DRF предлага:
+
+  - **Token Authentication**: Използва токени.
+
+  - **Session Authentication**: Базирана на Django сесии.
+
+  - **JWT Authentication**: JSON Web Tokens за сигурност.
+
+Пример за Token Authentication:
+
+```
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.contrib.auth import authenticate
+
+class LoginView(APIView):
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request):
+        user = authenticate(username=request.data['username'], password=request.data['password'])
+        if user:
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({'token': token.key})
+        return Response({'error': 'Invalid credentials'}, status=401)
+```
+
+**Permissions**
+
+**Разрешенията** контролират достъпа до ресурси:
+
+  - ```IsAuthenticated```: Разрешава само за автентикирани потребители.
+
+  - ```IsAuthenticated```: Разрешава само за автентикирани потребители.
+
+Пример:
+
+```
+from rest_framework.permissions import IsAdminUser
+
+class AdminOnlyView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        return Response({"message": "Welcome, admin!"})
+```
+
+**4. Exception Handling in DRF**
+
+Обработката на изключения гарантира предоставянето на смислени съобщения при грешки.
+    
+Основни изключения:
+
+  - ```APIException```: Базов клас за изключения в DRF.
+
+  - ```Http404```: Обектът не е намерен.
+
+  - ```PermissionDenied```: Потребителят няма достъп.
+
+Пример за персонализирано изключение:
+
+```
+from rest_framework.exceptions import APIException
+
+class ServiceUnavailable(APIException):
+    status_code = 503
+    default_detail = 'Service temporarily unavailable. Try again later.'
+    default_code = 'service_unavailable'
+```
+
+**Персонализиран обработчик на изключения**
+
+Може да създадете персонализиран обработчик чрез:
+
+```
+from rest_framework.views import exception_handler
+
+def custom_exception_handler(exc, context):
+    response = exception_handler(exc, context)
+    if response is not None:
+        response.data['status_code'] = response.status_code
+    return response
+```
+
+Конфигурация:
+
+```
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER': 'my_project.my_app.utils.custom_exception_handler',
+}
+```
+
+---
