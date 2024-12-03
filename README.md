@@ -1066,10 +1066,10 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
      ```
      from celery import Celery
 
-    app = Celery('project_name', broker='redis://localhost:6379/0')
-    app.config_from_object('django.conf:settings', namespace='CELERY')
-    app.autodiscover_tasks()
-    ```
+     app = Celery('project_name', broker='redis://localhost:6379/0')
+     app.config_from_object('django.conf:settings', namespace='CELERY')
+     app.autodiscover_tasks()
+     ```
     
 3. **Създаване на задача за генериране на миниатюри:**
    ```
