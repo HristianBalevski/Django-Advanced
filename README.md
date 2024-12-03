@@ -1105,3 +1105,153 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
    result = AsyncResult(task_id)
    print(result.status)
    ```
+
+---
+
+
+## 08. Unit Testing
+
+**1. Unit и Integration Testing**
+
+**Unit Testing:**
+
+  - **Цел**: Тестване на изолирани модули или функции.
+  - **Пример**: Тестване на валидатор в Django.
+
+    ```
+    from django.core.exceptions import ValidationError
+
+    def egn_validator(value: str):
+        if not value.isdigit():
+            raise ValidationError('EGN must contain only digits')
+    
+    # Unit test
+    from unittest import TestCase
+    
+    class EGNValidatorTestCase(TestCase):
+        def test_valid_egn(self):
+            try:
+                egn_validator("1234567890")
+            except ValidationError:
+                self.fail("ValidationError raised unexpectedly")
+    
+        def test_invalid_egn(self):
+            with self.assertRaises(ValidationError):
+                egn_validator("12345abcd")
+    ```
+
+**Integration Testing:**
+
+  - **Цел**: Тестване на взаимодействието между различни компоненти, напр. модели, изгледи, форми.
+  - **Пример**: Тестване на регистрация на потребител.
+
+    ```
+    from django.test import TestCase, Client
+    from django.urls import reverse
+    
+    class UserRegistrationTestCase(TestCase):
+        def setUp(self):
+            self.client = Client()
+            self.url = reverse('register')
+    
+        def test_registration_flow(self):
+            response = self.client.post(self.url, {
+                'username': 'testuser',
+                'password1': 'password',
+                'password2': 'password',
+            })
+            self.assertEqual(response.status_code, 302)  # Redirect on success
+
+    ```
+
+**2. Best Practices**
+
+**2.1. Test Granularity**: Разделяй тестовете на малки и независими модули.
+**2.2. Triple-A Rule (Arrange, Act, Assert)**:
+
+   - **Arrange**: Настройваш тестовата среда.
+   - **Act**: Извикваш кода, който ще тестваш.
+   - **Assert**: Проверяваш очакваното поведение.
+  
+```
+def test_sum():
+    # Arrange
+    a, b = 1, 2
+    
+    # Act
+    result = a + b
+    
+    # Assert
+    assert result == 3
+```
+
+**2.3. Single Assertion**: Всяка тестова функция трябва да проверява само един аспект.
+
+**3. Structuring and Organizing Tests**
+
+**3.1. Единични файлове**: tests.py във всяко Django приложение.
+
+**3.2. Папки за тестове**: Създавай tests/ в проектното ниво с поддиректории за различните функционалности.
+
+**Примерна структура:**
+
+```
+myproject/
+|-- app1/
+|   |-- tests/
+|       |-- test_models.py
+|       |-- test_views.py
+|       |-- test_forms.py
+|-- app2/
+|   |-- tests/
+|       |-- test_api.py
+```
+
+**4. Testing Django Components**
+
+**Testing Models:**
+
+  - **Пример**: Проверка на custom валидатор.
+
+```
+from django.test import TestCase
+from myapp.models import Profile
+
+class ProfileModelTestCase(TestCase):
+    def test_valid_profile(self):
+        profile = Profile(name="Test", age=25, egn="1234567890")
+        profile.full_clean()  # Проверка на валидност
+        profile.save()
+        self.assertIsNotNone(profile.id)
+```
+
+**Testing Views:**
+
+  - Тестване на HTTP отговори.
+
+```
+class ProfileViewTests(TestCase):
+    def test_index_page(self):
+        response = self.client.get(reverse('index'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'index.html')
+```
+
+**5. Live Demo**
+
+Можем да използваме pytest и Django тестовия клиент за изпълнение на тестовете.
+Например:
+
+1. **Инсталираме** ```pytest-django:```
+
+   ```
+   pip install pytest-django
+   ```
+
+2. **Изпълняваме тестовете**:
+
+```
+pytest
+```
+
+---
