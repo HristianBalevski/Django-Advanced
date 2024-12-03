@@ -972,3 +972,136 @@ REST_FRAMEWORK = {
 ```
 
 ---
+
+## 07. Asynchronous Оperations
+
+**1. Asynchronous Operations**
+
+Асинхронните операции позволяват изпълнението на задачи без блокиране на основния поток. Това означава, че докато една задача се изпълнява, други могат да се стартират едновременно.
+
+**Пример с Python:**
+
+```
+import asyncio
+
+async def do_work():
+    print("Working...")
+    await asyncio.sleep(1) # Simulates an asynchronous operation that takes 1 second
+    print("Work done!")
+
+async def main():
+    print("Before asynchronous operation")
+    asyncio.create_task(do_work()) # Starts the asynchronous operation concurrently
+    print("Doing something else while waiting...")
+    await asyncio.sleep(0.5) # Simulates doing something else for 0.5 seconds
+    print("Continuing with main operation")
+    await asyncio.sleep(0.5) # Simulates more work after the asynchronous operation completes
+    print("After asynchronous operation")
+
+asyncio.run(main())
+```
+
+**2. Celery**
+
+Celery е библиотека за управление на асинхронни задачи и работи с "workers" (работници), които изпълняват тези задачи.
+
+**Task / Job Queues**
+
+  - Task queues съхраняват задачите, които трябва да се изпълнят. Celery използва брокери на съобщения (например Redis) за управление на тези опашки.
+
+**Scheduling**
+
+Celery позволява планиране на задачи (напр. изпълнение на задача всяка сутрин в 9 часа).
+
+**Пример за дефиниране на задача:**
+
+```
+from celery import shared_task
+
+@shared_task
+def add(x, y):
+    return x + y
+```
+
+**Стартиране на работник:**
+
+```
+celery -A project_name worker --loglevel=info
+```
+
+**3. Redis**
+
+Redis е in-memory база данни, която се използва като брокер на съобщения за Celery. Той осигурява бърз достъп до данни и е идеален за задачи в реално време.
+
+**Redis като Message Broker**
+
+Redis предава съобщения между Celery и работниците. Това е ключово за асинхронната архитектура.
+
+**Настройки за Redis като брокер:**
+
+```
+# settings.py
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+```
+
+**4. Пример: Приложение със Celery и Redis**
+
+**Цел на приложението:**
+Създаване на система за генериране на миниатюри (thumbnails) на изображения.
+
+**Ключови стъпки:**
+
+1. **Настройка на проекта:**
+   
+   - Инсталирайте нужните пакети:
+     ```
+     pip install celery redis pillow django
+     ```
+    
+2. **Настройка на Celery:**
+
+   - Добавете Celery конфигурация в ```settings.py```.
+   - Създайте файл ```celery.py``` за интеграция:
+     ```
+     from celery import Celery
+
+    app = Celery('project_name', broker='redis://localhost:6379/0')
+    app.config_from_object('django.conf:settings', namespace='CELERY')
+    app.autodiscover_tasks()
+    ```
+    
+3. **Създаване на задача за генериране на миниатюри:**
+   ```
+   from PIL import Image
+   from celery import shared_task
+    
+    @shared_task
+    def make_thumbnails(file_path, dimensions):
+        img = Image.open(file_path)
+        for width, height in dimensions:
+            img.thumbnail((width, height))
+            img.save(f"{file_path}_{width}x{height}.jpg")
+    ```
+   
+4. **Интеграция в Django:**
+
+   - Създайте форма за качване на файлове.
+   - Използвайте ```make_thumbnails.delay()``` за асинхронно изпълнение.
+
+5. **Тестване:**
+
+   - Стартирайте Django сървъра.
+   - Стартирайте Celery работник:
+     ```
+     celery -A project_name worker --loglevel=info
+     ```
+
+6. **Проверка на статус:**
+
+   ```
+   from celery.result import AsyncResult
+
+   result = AsyncResult(task_id)
+   print(result.status)
+   ```
